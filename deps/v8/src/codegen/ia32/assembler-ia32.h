@@ -392,10 +392,22 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
     GetCode(isolate, desc, kNoSafepointTable, kNoHandlerTable);
   }
 
+  // This function is called when on-heap-compilation invariants are
+  // invalidated. For instance, when the assembler buffer grows or a GC happens
+  // between Code object allocation and Code object finalization.
+  void FixOnHeapReferences();
+
   void FinalizeJumpOptimizationInfo();
 
   // Unused on this architecture.
   void MaybeEmitOutOfLineConstantPool() {}
+
+#ifdef DEBUG
+  bool EmbeddedObjectMatches(int pc_offset, Handle<Object> object) {
+    return *reinterpret_cast<uint32_t*>(buffer_->start() + pc_offset) ==
+           (IsOnHeap() ? object->ptr() : object.address());
+  }
+#endif
 
   // Read/Modify the code target in the branch/call instruction at pc.
   // The isolate argument is unused (and may be nullptr) when skipping flushing.
@@ -464,6 +476,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   void Nop(int bytes = 1);
   // Aligns code to something that's optimal for a jump target for the platform.
   void CodeTargetAlign();
+  void LoopHeaderAlign() { CodeTargetAlign(); }
 
   // Stack
   void pushad();

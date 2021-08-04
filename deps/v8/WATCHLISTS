@@ -97,7 +97,13 @@
     },
     'regexp': {
       'filepath': 'src/.*regexp',
-    }
+    },
+    'bazel': {
+      'filepath': 'BUILD.gn' \
+                  '|BUILD.bazel' \
+                  '|WORKSPACE' \
+                  '|bazel/'
+    },
   },
 
   'WATCHLISTS': {
@@ -132,7 +138,7 @@
     ],
     'merges': [
       # Only enabled on branches created with tools/release/create_release.py
-      'v8-merges@googlegroups.com',
+      # 'v8-merges@googlegroups.com',
     ],
     'wasm': [
       'wasm-v8@google.com',
@@ -155,6 +161,9 @@
     'regexp': [
       'jgruber+watch@chromium.org',
       'pthier+watch@chromium.org'
+    ],
+    'bazel' : [
+      'victorgomes+watch@chromium.org'
     ],
   },
 }

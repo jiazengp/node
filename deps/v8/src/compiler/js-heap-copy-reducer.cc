@@ -27,22 +27,11 @@ JSHeapBroker* JSHeapCopyReducer::broker() { return broker_; }
 
 Reduction JSHeapCopyReducer::Reduce(Node* node) {
   switch (node->opcode()) {
-    case IrOpcode::kCheckClosure: {
-      FeedbackCellRef cell = MakeRef(broker(), FeedbackCellOf(node->op()));
-      base::Optional<FeedbackVectorRef> feedback_vector = cell.value();
-      if (feedback_vector.has_value()) {
-        feedback_vector->Serialize();
-      }
-      break;
-    }
     case IrOpcode::kHeapConstant: {
       ObjectRef object = MakeRef(broker(), HeapConstantOf(node->op()));
-      if (object.IsJSFunction()) object.AsJSFunction().Serialize();
       if (object.IsJSObject()) {
-        object.AsJSObject().SerializeObjectCreateMap();
-      }
-      if (object.IsSourceTextModule()) {
-        object.AsSourceTextModule().Serialize();
+        object.AsJSObject().SerializeObjectCreateMap(
+            NotConcurrentInliningTag{broker()});
       }
       break;
     }
@@ -81,7 +70,7 @@ Reduction JSHeapCopyReducer::Reduce(Node* node) {
     case IrOpcode::kJSCreateEmptyLiteralArray: {
       FeedbackParameter const& p = FeedbackParameterOf(node->op());
       if (p.feedback().IsValid()) {
-        broker()->ProcessFeedbackForArrayOrObjectLiteral(p.feedback());
+        broker()->GetFeedbackForArrayOrObjectLiteral(p.feedback());
       }
       break;
     }
@@ -93,7 +82,7 @@ Reduction JSHeapCopyReducer::Reduce(Node* node) {
       FeedbackParameter const& p = FeedbackParameterOf(node->op());
       if (p.feedback().IsValid()) {
         // Unary ops are treated as binary ops with respect to feedback.
-        broker()->ProcessFeedbackForBinaryOperation(p.feedback());
+        broker()->GetFeedbackForBinaryOperation(p.feedback());
       }
       break;
     }
@@ -112,7 +101,7 @@ Reduction JSHeapCopyReducer::Reduce(Node* node) {
     case IrOpcode::kJSShiftRightLogical: {
       FeedbackParameter const& p = FeedbackParameterOf(node->op());
       if (p.feedback().IsValid()) {
-        broker()->ProcessFeedbackForBinaryOperation(p.feedback());
+        broker()->GetFeedbackForBinaryOperation(p.feedback());
       }
       break;
     }
@@ -125,7 +114,7 @@ Reduction JSHeapCopyReducer::Reduce(Node* node) {
     case IrOpcode::kJSStrictEqual: {
       FeedbackParameter const& p = FeedbackParameterOf(node->op());
       if (p.feedback().IsValid()) {
-        broker()->ProcessFeedbackForCompareOperation(p.feedback());
+        broker()->GetFeedbackForCompareOperation(p.feedback());
       }
       break;
     }
@@ -139,14 +128,14 @@ Reduction JSHeapCopyReducer::Reduce(Node* node) {
     case IrOpcode::kJSCreateLiteralObject: {
       CreateLiteralParameters const& p = CreateLiteralParametersOf(node->op());
       if (p.feedback().IsValid()) {
-        broker()->ProcessFeedbackForArrayOrObjectLiteral(p.feedback());
+        broker()->GetFeedbackForArrayOrObjectLiteral(p.feedback());
       }
       break;
     }
     case IrOpcode::kJSCreateLiteralRegExp: {
       CreateLiteralParameters const& p = CreateLiteralParametersOf(node->op());
       if (p.feedback().IsValid()) {
-        broker()->ProcessFeedbackForRegExpLiteral(p.feedback());
+        broker()->GetFeedbackForRegExpLiteral(p.feedback());
       }
       break;
     }
@@ -155,7 +144,7 @@ Reduction JSHeapCopyReducer::Reduce(Node* node) {
           GetTemplateObjectParametersOf(node->op());
       MakeRef(broker(), p.shared());
       MakeRef(broker(), p.description());
-      broker()->ProcessFeedbackForTemplateObject(p.feedback());
+      broker()->GetFeedbackForTemplateObject(p.feedback());
       break;
     }
     case IrOpcode::kJSCreateWithContext: {
@@ -166,8 +155,8 @@ Reduction JSHeapCopyReducer::Reduce(Node* node) {
       NamedAccess const& p = NamedAccessOf(node->op());
       NameRef name = MakeRef(broker(), p.name());
       if (p.feedback().IsValid()) {
-        broker()->ProcessFeedbackForPropertyAccess(p.feedback(),
-                                                   AccessMode::kLoad, name);
+        broker()->GetFeedbackForPropertyAccess(p.feedback(), AccessMode::kLoad,
+                                               name);
       }
       break;
     }
@@ -175,8 +164,8 @@ Reduction JSHeapCopyReducer::Reduce(Node* node) {
       NamedAccess const& p = NamedAccessOf(node->op());
       NameRef name = MakeRef(broker(), p.name());
       if (p.feedback().IsValid()) {
-        broker()->ProcessFeedbackForPropertyAccess(p.feedback(),
-                                                   AccessMode::kLoad, name);
+        broker()->GetFeedbackForPropertyAccess(p.feedback(), AccessMode::kLoad,
+                                               name);
       }
       break;
     }
@@ -223,8 +212,8 @@ Reduction JSHeapCopyReducer::Reduce(Node* node) {
       PropertyAccess const& p = PropertyAccessOf(node->op());
       AccessMode access_mode = AccessMode::kLoad;
       if (p.feedback().IsValid()) {
-        broker()->ProcessFeedbackForPropertyAccess(p.feedback(), access_mode,
-                                                   base::nullopt);
+        broker()->GetFeedbackForPropertyAccess(p.feedback(), access_mode,
+                                               base::nullopt);
       }
       break;
     }

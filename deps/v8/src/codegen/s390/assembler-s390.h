@@ -241,6 +241,11 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
     GetCode(isolate, desc, kNoSafepointTable, kNoHandlerTable);
   }
 
+  // This function is called when on-heap-compilation invariants are
+  // invalidated. For instance, when the assembler buffer grows or a GC happens
+  // between Code object allocation and Code object finalization.
+  void FixOnHeapReferences();
+
   // Unused on this architecture.
   void MaybeEmitOutOfLineConstantPool() {}
 
@@ -1055,6 +1060,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
   void DataAlign(int m);
   // Aligns code to something that's optimal for a jump target for the platform.
   void CodeTargetAlign();
+  void LoopHeaderAlign() { CodeTargetAlign(); }
 
   void breakpoint(bool do_print) {
     if (do_print) {
